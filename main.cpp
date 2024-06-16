@@ -1,15 +1,17 @@
 #include <mbed.h>
 #include <threadLvgl.h>
+
 #include "demos/lv_demos.h"
 #include <vector>
 #include <string>
-#include "apple.h"
 
 // Définition des broches
 const PinName PINS[] = {A0, A1, A2, A3, A4, A5};
 const int NUM_PINS = sizeof(PINS) / sizeof(PinName);
 
 // Configuration de LVGL
+ThreadLvgl threadLvgl(30);
+lv_obj_t *pin_labels[NUM_PINS]; // Étiquettes des broches (labels) pour afficher l'état des broches
 lv_obj_t *start_button; // Bouton pour démarrer le jeu
 lv_obj_t *start_label; // Étiquette (label) pour le texte du bouton de démarrage
 
@@ -17,7 +19,8 @@ lv_obj_t *start_label; // Étiquette (label) pour le texte du bouton de démarra
 const int SCREEN_WIDTH = 480; // Écran tactile LCD TFT 4.3 pouces 480x272
 const int SCREEN_HEIGHT = 270; 
 const int INITIAL_SPEED = 100; // Vitesse initiale en millisecondes
-const int SNAKE_SIZE = 15; // Taille du serpent
+const int SNAKE_SIZE = 15; // Size de Snake
+
 
 enum Direction
 {
@@ -25,7 +28,8 @@ enum Direction
     DOWN,  // Bas
     LEFT,  // Gauche
     RIGHT, // Droite
-    STOP   // Arrêt
+    STOP,  // Arrêt
+    PLAY,  //Jouer
 };
 Direction snake_dir = STOP;
 bool game_running = false;
@@ -192,8 +196,12 @@ void draw_game()
 
         lv_obj_align(rect, LV_ALIGN_TOP_LEFT, snake[i].x, snake[i].y);
     }
+
     // Dessiner la nourriture
-    draw_apple(lv_scr_act(), food.x, food.y);
+    lv_obj_t *apple = lv_obj_create(lv_scr_act());
+    lv_obj_set_size(apple, SNAKE_SIZE, SNAKE_SIZE);
+    lv_obj_set_style_bg_color(apple, lv_color_make(255, 0, 0), LV_PART_MAIN); // coler rouge
+    lv_obj_align(apple, LV_ALIGN_TOP_LEFT, food.x, food.y);
 
     // Dessiner le score
     char score_str[32];
@@ -220,9 +228,9 @@ void create_start_button()
 
 void ok_button_event_handler(lv_event_t *e)
 {
-    lv_obj_clean(lv_scr_act()); 
-    init_game(); 
-    create_start_button(); 
+    lv_obj_clean(lv_scr_act()); // Effacer l'écran avant de commencer un nouveau jeu
+    init_game(); // Initialiser le jeu
+    create_start_button(); // Recréer le bouton de démarrage
 }
 
 void handle_gameover()
@@ -275,6 +283,7 @@ int main()
         if (reset_btn.read() == 0)
         {
             ThisThread::sleep_for(100ms);
+
             init_game();
         }
 
@@ -282,6 +291,7 @@ int main()
         if (pause_btn.read() == 0)
         {
             ThisThread::sleep_for(400ms);
+
             paused = !paused;
         }
 
