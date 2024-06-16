@@ -1,41 +1,38 @@
 #include <mbed.h>
 #include <threadLvgl.h>
-
 #include "demos/lv_demos.h"
 #include <vector>
 #include <string>
 #include "apple.h"
 
-// Pin definitions
+// Définition des broches
 const PinName PINS[] = {A0, A1, A2, A3, A4, A5};
 const int NUM_PINS = sizeof(PINS) / sizeof(PinName);
 
-// LVGL setup
-ThreadLvgl threadLvgl(30);
-lv_obj_t *pin_labels[NUM_PINS];
-lv_obj_t *start_button;
-lv_obj_t *start_label;
+// Configuration de LVGL
+lv_obj_t *start_button; // Bouton pour démarrer le jeu
+lv_obj_t *start_label; // Étiquette (label) pour le texte du bouton de démarrage
 
-// Snake game parameters
-const int SNAKE_SIZE = 15;
-const int SCREEN_WIDTH = 480;
-const int SCREEN_HEIGHT = 270;
-const int INITIAL_SPEED = 100; // Initial speed in milliseconds
+// Paramètres du jeu Snake
+const int SCREEN_WIDTH = 480; // Écran tactile LCD TFT 4.3 pouces 480x272
+const int SCREEN_HEIGHT = 270; 
+const int INITIAL_SPEED = 100; // Vitesse initiale en millisecondes
+const int SNAKE_SIZE = 15; // Taille du serpent
 
 enum Direction
 {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    STOP
+    UP,    // Haut
+    DOWN,  // Bas
+    LEFT,  // Gauche
+    RIGHT, // Droite
+    STOP   // Arrêt
 };
 Direction snake_dir = STOP;
 bool game_running = false;
 bool gameover = false;
 bool paused = false;
 int score = 0;
-int game_speed = INITIAL_SPEED; // Initial game speed
+int game_speed = INITIAL_SPEED; // Vitesse initiale du jeu
 
 struct Point
 {
@@ -46,10 +43,10 @@ std::vector<Point> snake;
 Point food;
 std::string player_name = "Player";
 
-// Color variables
+// Variables de couleur
 lv_color_t snake_color;
 
-// Initialize digital input pins globally
+// Initialisation des broches d'entrée numérique globalement
 DigitalIn up(PINS[2]);
 DigitalIn left_btn(PINS[4]);
 DigitalIn right_btn(PINS[3]);
@@ -65,25 +62,25 @@ void place_food()
 
 void init_game()
 {
-    // Reset the game
+    // Réinitialiser le jeu
     snake.clear();
     for (int i = 0; i < 5; ++i)
     {
         snake.push_back({SCREEN_WIDTH / 2 + i * SNAKE_SIZE, SCREEN_HEIGHT / 2});
     }
     place_food();
-    snake_dir = LEFT; // Start moving left by default
+    snake_dir = LEFT; // Commencer à bouger vers la gauche par défaut
     game_running = true;
     gameover = false;
     paused = false;
     score = 0;
-    game_speed = INITIAL_SPEED; // Reset game speed
-    snake_color = lv_color_hex(0x800080); // Initial snake color (Purple)
+    game_speed = INITIAL_SPEED; // Réinitialiser la vitesse du jeu
+    snake_color = lv_color_hex(0x800080); // Couleur initiale du serpent (Violet)
 }
 
 void update_direction()
 {
-    // Read input pins and update direction accordingly
+    // Lire les broches d'entrée et mettre à jour la direction en conséquence
     if ((up.read() == 0) && (snake_dir != DOWN))
     {
         snake_dir = UP;
@@ -128,7 +125,7 @@ void move_snake()
         break;
     }
 
-    // Wrap around the screen
+    // Enrouler autour de l'écran
     if (new_head.x >= SCREEN_WIDTH)
         new_head.x = 0;
     if (new_head.x < 0)
@@ -138,7 +135,7 @@ void move_snake()
     if (new_head.y < 0)
         new_head.y = SCREEN_HEIGHT - SNAKE_SIZE;
 
-    // Check for collisions with itself
+    // Vérifier les collisions avec lui-même
     for (const auto &part : snake)
     {
         if (new_head.x == part.x && new_head.y == part.y)
@@ -151,18 +148,18 @@ void move_snake()
 
     snake.insert(snake.begin(), new_head);
 
-    // Check for food consumption
+    // Vérifier la consommation de nourriture
     if (new_head.x == food.x && new_head.y == food.y)
     {
         place_food();
         score++;
 
-        // Change snake color
+        // Changer la couleur du serpent
         snake_color = lv_color_hex(rand() % 0xFFFFFF);
 
-        // Increase game speed every time the score increases
-        game_speed -= 10; // Adjust this value to control the rate of speed increase
-        if (game_speed < 50) // Ensure speed doesn't go below a certain threshold
+        // Augmenter la vitesse du jeu à chaque fois que le score augmente
+        game_speed -= 10; // Ajuster cette valeur pour contrôler le taux d'augmentation de la vitesse
+        if (game_speed < 50) // Assurez-vous que la vitesse ne descend pas en dessous d'un certain seuil
             game_speed = 50;
     }
     else
@@ -175,7 +172,7 @@ void draw_game()
 {
     lv_obj_clean(lv_scr_act());
 
-    // Draw the snake
+    // Dessiner le serpent
     for (size_t i = 0; i < snake.size(); ++i)
     {
         lv_obj_t *rect = lv_obj_create(lv_scr_act());
@@ -184,21 +181,21 @@ void draw_game()
         
         if (i == 0)
         {
-            // Head
+            // Tête
             lv_obj_set_style_bg_color(rect, snake_color, LV_PART_MAIN);
         }
         else
         {
-            // Body
+            // Corps
             lv_obj_set_style_bg_color(rect, snake_color, LV_PART_MAIN);
         }
 
         lv_obj_align(rect, LV_ALIGN_TOP_LEFT, snake[i].x, snake[i].y);
     }
-    // Draw the food
+    // Dessiner la nourriture
     draw_apple(lv_scr_act(), food.x, food.y);
 
-    // Draw the score
+    // Dessiner le score
     char score_str[32];
     sprintf(score_str, "Score: %d", score);
     lv_obj_t *score_label = lv_label_create(lv_scr_act());
@@ -223,76 +220,72 @@ void create_start_button()
 
 void ok_button_event_handler(lv_event_t *e)
 {
-    lv_obj_clean(lv_scr_act()); // Xóa màn hình trước khi bắt đầu trò chơi mới
-    init_game(); // Khởi tạo lại trò chơi
-    create_start_button(); // Tạo nút bắt
+    lv_obj_clean(lv_scr_act()); 
+    init_game(); 
+    create_start_button(); 
 }
 
 void handle_gameover()
 {
-// Display game over screen and prompt for player name input
-lv_obj_clean(lv_scr_act());
-lv_obj_t *gameover_label = lv_label_create(lv_scr_act());
-lv_label_set_text(gameover_label, "Game Over");
-lv_obj_align(gameover_label, LV_ALIGN_CENTER, 0, -40);
+    // Afficher l'écran de fin de jeu et demander l'entrée du nom du joueur
+    lv_obj_clean(lv_scr_act());
+    lv_obj_t *gameover_label = lv_label_create(lv_scr_act());
+    lv_label_set_text(gameover_label, "Game Over");
+    lv_obj_align(gameover_label, LV_ALIGN_CENTER, 0, -40);
 
-lv_obj_t *score_label = lv_label_create(lv_scr_act());
-char score_str[32];
-sprintf(score_str, "Score: %d", score);
-lv_label_set_text(score_label, score_str);
-lv_obj_align(score_label, LV_ALIGN_CENTER, 0, -10);
+    lv_obj_t *score_label = lv_label_create(lv_scr_act());
+    char score_str[32];
+    sprintf(score_str, "Score: %d", score);
+    lv_label_set_text(score_label, score_str);
+    lv_obj_align(score_label, LV_ALIGN_CENTER, 0, -10);
 
+    // Créer une boîte de saisie pour le nom du joueur
+    lv_obj_t *ok_btn = lv_btn_create(lv_scr_act());
+    lv_obj_align(ok_btn, LV_ALIGN_CENTER, 0, 100);
+    lv_obj_add_event_cb(ok_btn, ok_button_event_handler, LV_EVENT_CLICKED, NULL);
 
-// Create an input box for player name
-
-lv_obj_t *ok_btn = lv_btn_create(lv_scr_act());
-lv_obj_align(ok_btn, LV_ALIGN_CENTER, 0, 100);
-lv_obj_add_event_cb(ok_btn, ok_button_event_handler, LV_EVENT_CLICKED, NULL);
-
-lv_obj_t *ok_label = lv_label_create(ok_btn);
-lv_label_set_text(ok_label, "Appuyez sur le bouton vert pour reinitialiser le jeu");
+    lv_obj_t *ok_label = lv_label_create(ok_btn);
+    lv_label_set_text(ok_label, "Appuyez sur le bouton vert pour réinitialiser le jeu");
 }
 
 int main()
 {
-threadLvgl.lock();
-create_start_button();
-threadLvgl.unlock();
-while (1)
-{
-threadLvgl.lock();
-    if (game_running)
-    {
-        if (!paused)
-        {
-            update_direction();
-            move_snake();
-            draw_game();
-            ThisThread::sleep_for(game_speed); // Sleep for the current game speed
-        }
-    }
-    else if (gameover)
-    {
-        handle_gameover();
-    }
-
-    // Check for reset button
-    if (reset_btn.read() == 0)
-    {
-        ThisThread::sleep_for(100ms);
-
-        init_game();
-    }
-
-    // Check for pause button
-    if (pause_btn.read() == 0)
-    {
-        ThisThread::sleep_for(400ms);
-
-        paused = !paused;
-    }
-
+    threadLvgl.lock();
+    create_start_button();
     threadLvgl.unlock();
-    ThisThread::sleep_for(10ms); // Adjust this delay as needed
-}
+    while (1)
+    {
+        threadLvgl.lock();
+        if (game_running)
+        {
+            if (!paused)
+            {
+                update_direction();
+                move_snake();
+                draw_game();
+                ThisThread::sleep_for(game_speed); // Pause pendant la vitesse actuelle du jeu
+            }
+        }
+        else if (gameover)
+        {
+            handle_gameover();
+        }
+
+        // Vérifier le bouton de réinitialisation
+        if (reset_btn.read() == 0)
+        {
+            ThisThread::sleep_for(100ms);
+            init_game();
+        }
+
+        // Vérifier le bouton de pause
+        if (pause_btn.read() == 0)
+        {
+            ThisThread::sleep_for(400ms);
+            paused = !paused;
+        }
+
+        threadLvgl.unlock();
+        ThisThread::sleep_for(10ms); // Ajuster ce délai si nécessaire
+    }
 }
